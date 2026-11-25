@@ -1,0 +1,13 @@
+{
+  "name": "smart-bin-node-red",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node-RED dashboard and MQTT integration for the smart bin",
+  "scripts": {
+    "start": "node-red --userDir .runtime --settings settings.js flows.json",
+    "test": "node --test ../tests/flows.test.cjs",
+    "test:integration": "node ../tests/integration.cjs"
+  },
+  "dependencies": { "node-red": "4.1.7" },
+  "devDependencies": { "aedes": "0.51.3", "mqtt": "5.10.4" }
+}

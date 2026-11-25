@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nhóm 6 · Thùng rác thông minh</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#e7edf8;background:#0c1625;color-scheme:dark}*{box-sizing:border-box}body{margin:0}main{max-width:1000px;margin:0 auto;padding:42px 22px}header{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:32px}.eyebrow{color:#6ae4bc;font-size:12px;letter-spacing:.18em}h1{font-size:clamp(25px,5vw,38px);margin:9px 0}p{color:#a9b8cc;line-height:1.6}.badge{border:1px solid #394c63;border-radius:30px;padding:10px 16px;white-space:nowrap}.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}.card{background:#142338;border:1px solid #283c54;border-radius:20px;padding:26px}.value{font-size:68px;font-weight:700;margin:14px 0}progress{width:100%;height:20px;accent-color:#57dbb0}.details{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:25px}.label{font-size:13px;color:#9db0c9}.metric{font-size:21px;margin-top:6px}.buttons{display:flex;flex-wrap:wrap;gap:10px}button{padding:13px 16px;border:1px solid #4a617b;border-radius:11px;background:#263e58;color:#fff;font:inherit;cursor:pointer}button:first-child{background:#62dfb3;color:#09251d;border:0}button:disabled{opacity:.4;cursor:default}#alert{margin-top:20px;padding:16px;border-radius:12px;background:#1e354c}.foot{font-size:12px;margin-top:24px}#result{min-height:50px;overflow-wrap:anywhere}@media(max-width:650px){header{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.value{font-size:58px}}
+</style></head>
+<body><main><header><div><div class="eyebrow">NHÓM 6 / IOT SMART BIN</div><h1>Thùng rác thông minh</h1><p>v4 · Hai HC-SR04 dưới nắp · Không dùng Break Beam</p></div><div id="online" class="badge">Đang kết nối…</div></header>
+<section class="grid"><article class="card"><div class="label">MỨC ƯỚC TÍNH TỪ HAI VÙNG ĐO</div><div class="value" id="fill">—</div><progress id="bar" max="100" value="0"></progress><div id="alert" role="status">Chờ dữ liệu ESP32…</div><div class="details"><div><div class="label">Khoảng cách A / B</div><div class="metric" id="distance">—</div></div><div><div class="label">Cảm biến mức rác</div><div class="metric" id="sensor">—</div></div></div></article>
+<article class="card"><div class="label">TRẠNG THÁI THIẾT BỊ</div><div class="details"><div><div class="label">Lệnh nắp (chưa có phản hồi vị trí)</div><div class="metric" id="lid">—</div></div><div><div class="label">Phát hiện tay</div><div class="metric" id="hand">—</div></div><div><div class="label">Số lượt mở</div><div class="metric" id="count">—</div></div><div><div class="label">Còi báo</div><div class="metric" id="muted">—</div></div></div><p id="updated">Chưa nhận dữ liệu</p><div class="buttons"><button disabled data-command="open">Mở 5 giây</button><button disabled data-command="auto">Tự động</button><button disabled data-command="mute">Tắt còi</button><button disabled data-command="unmute">Bật còi</button></div><p id="result" aria-live="polite">Nắp ưu tiên tín hiệu tay bên ngoài. Không có cảm biến xác nhận vật chắn trong miệng thùng.</p></article></section><article class="card" style="margin-top:18px"><div class="label">KIỂM TRA MỨC RÁC VÀ THAY TÚI</div><div class="details"><div><div class="label">Cảm biến miệng thùng</div><div class="metric" id="mouth">—</div></div><div><div class="label">Chế độ</div><div class="metric" id="service">—</div></div><div><div class="label">Mốc thùng gần rỗng</div><div class="metric" id="verified">—</div></div></div><p>1. Bắt đầu thay túi để giữ mở nắp. 2. Đưa mép túi vào vành giữ, để hở cảm biến. 3. Bấm kiểm tra; rút tay và để miệng thùng thông thoáng. Chỉ báo đạt khi các phép đo xác nhận gần rỗng.</p><div class="buttons"><button disabled data-command="begin_service">Bắt đầu thay túi</button><button disabled data-command="finish_service">Đã lắp túi — kiểm tra</button><button disabled data-command="recheck">Đo lại</button></div></article>
+<p class="foot">Khoảng cách không nhận dạng được vật liệu. Mức cao đột ngột yêu cầu kiểm tra; hệ thống không tự ép/gạt rác. Hai cảm biến vẫn có thể cùng bị che bởi vật lớn. Chỉ cảm biến tay bên ngoài yêu cầu giữ mở. Giấy mắc ngoài hai vùng đo có thể bị bỏ sót. Chưa có phản hồi vị trí nắp hay chống kẹp được kiểm chứng.</p></main>
+<script>
+const el=id=>document.getElementById(id);let pending=null, busy=false;
+function levelMessage(d){
+ const messages={warming:'Đang thu đủ mẫu để lọc nhiễu',settling:'Nắp mở / chờ ổn định — chưa kết luận mức rác',sensor_fault:'Phép đo lỗi hoặc ngoài chiều cao thùng — kiểm tra cảm biến',normal:'Các điểm đo chưa cao; không có nghĩa mọi vùng đều trống',checking:'Đang xác nhận qua nhiều cặp đo mới',obstruction_suspected:'Nghi vật che hoặc rác lệch — chưa xác nhận đầy',high_unverified:'Mức cao chưa xác minh: kiểm tra giấy/túi hoặc thực hiện thay túi',full:'Có khả năng đầy: mức tăng và hai vùng cao ổn định',inspection_required:'Mức tăng cao đột ngột / chưa loại trừ vật che. Kiểm tra giấy/túi; không coi là đầy.',service:'Đang thay túi — nắp được giữ mở để thao tác',empty_check:'Đang kiểm tra sau thay túi. Rút tay, để miệng thông thoáng và chờ kết quả.',bag_check_failed:'Kiểm tra túi KHÔNG ĐẠT. Chỉnh túi khỏi vùng cảm biến, bắt đầu thay túi rồi kiểm tra lại.'};
+ if(d.hand_held&&d.service_mode==='operating'&&d.level_state==='settling')return 'Cảm biến tay bị tác động quá 30 giây. Kiểm tra tay/vật che/dây; không ép đóng.';
+ return messages[d.level_state]||'Dữ liệu chưa tương thích; cần firmware schema 4';
+}
+let currentBoot='';
+async function refresh(){
+ if(busy)return;busy=true;
+ try{
+  const r=await fetch('/bin/api',{cache:'no-store',signal:AbortSignal.timeout(3000)});if(!r.ok)throw Error();
+  const s=await r.json(),d=s.telemetry||{},ok=s.online;
+  el('online').textContent=ok?(d.source==='desktop_simulator'?'● MÔ PHỎNG TRÊN MÁY':'● ESP32 trực tuyến'):'○ Thiết bị ngoại tuyến';
+  el('online').style.color=ok?'#6ae4bc':'#ffbc80';
+  document.querySelectorAll('button').forEach(b=>b.disabled=!ok||!d.remote_control||!!pending||(b.dataset.command==='finish_service'&&!['servicing','service_failed'].includes(d.service_mode))||(b.dataset.command==='recheck'&&d.service_mode!=='operating'));currentBoot=d.boot_id||'';
+  const valid=ok&&d.sensor_ok, estimate=valid&&['normal','full'].includes(d.level_state);
+  el('fill').textContent=estimate?Number(d.fill_percent).toFixed(1)+'%':'—';
+  el('bar').value=estimate?d.fill_percent:0;
+  const cm=(v,good)=>good&&Number.isFinite(v)?v.toFixed(1)+' cm':'—';
+  el('distance').textContent=ok?'A: '+cm(d.distance_a_cm,d.sensor_a_ok)+(d.sensor_count===2?' / B: '+cm(d.distance_b_cm,d.sensor_b_ok):' (chỉ 1 điểm)'):'—';
+  const sampling={paused_open:'Tạm ngừng đo: nắp mở',settling:'Chờ nắp ổn định',warming:'Đang lấy mẫu mới',fault:'Lỗi phép đo',ready:'Hai điểm hợp lệ'};el('sensor').textContent=ok?(sampling[d.measurement_status]||'Không xác định'):'Không có dữ liệu';
+  el('lid').textContent=ok?(d.lid==='open'?'Đang mở':'Đang đóng'):'—';
+  el('hand').textContent=ok?(d.hand_detected?'Có tay':'Không'):'—';
+  el('count').textContent=ok?d.open_count:'—';
+  el('muted').textContent=ok?(d.muted?'Đã tắt':'Đã bật'):'—';
+  el('updated').textContent=s.received_at?'Nhận lúc '+new Date(s.received_at).toLocaleTimeString('vi-VN'):'Chờ ESP32 phát dữ liệu';
+  el('alert').textContent=ok?levelMessage(d):'Mất kết nối hoặc chưa nhận dữ liệu mới';
+  el('alert').style.background=ok&&['full','obstruction_suspected','high_unverified','inspection_required','mouth_blocked','bag_check_failed','sensor_fault'].includes(d.level_state)?'#6a3821':'#1e354c';
+  el('mouth').textContent='Không trang bị — không xác nhận thông thoáng';
+  const modes={operating:'Hoạt động',servicing:'Đang thay túi',verifying_empty:'Kiểm tra thùng gần rỗng',service_failed:'Cần chỉnh túi / cảm biến'};
+  el('service').textContent=ok?(modes[d.service_mode]||'Không xác định'):'—';
+  el('verified').textContent=ok?(d.empty_verified?'Đã có bằng chứng gần rỗng':'Chưa xác minh / cần kiểm tra'):'—';
+  if(ok&&!d.remote_control&&!pending)el('result').textContent='Thiết bị đang tắt điều khiển từ xa. Dùng nút S tại thùng để thay túi / kiểm tra.';
+  if(pending){
+   if(pending.boot&&pending.boot!==d.boot_id){el('result').textContent='ESP32 đã khởi động lại. Lệnh trước đó không còn được coi là đã xác nhận.';pending=null;}
+   else if(d.last_command_id===pending.id){const results={applied:'ESP32 đã áp dụng lệnh. Vị trí thực của nắp chưa có cảm biến xác nhận.',accepted:'Đã nhận yêu cầu. Theo dõi chế độ thay túi/kiểm tra để biết hoàn tất hay thất bại.',rejected:'ESP32 từ chối lệnh vì không đúng trạng thái.',expired:'Lệnh hết hạn trước khi áp dụng.'};el('result').textContent=results[d.last_command_result]||'Kết quả chưa xác định';pending=null;}
+   else if(Date.now()-pending.at>8000){el('result').textContent='Chưa có xác nhận sau 8 giây. Kiểm tra MQTT trước khi thử lại.';pending=null;}
+  }
+ }catch{el('online').textContent='Không kết nối được Node-RED';document.querySelectorAll('button').forEach(b=>b.disabled=true);}
+ finally{busy=false;}
+}
+document.querySelectorAll('button').forEach(b=>b.onclick=async()=>{document.querySelectorAll('button').forEach(x=>x.disabled=true);try{const r=await fetch('/bin/api/command',{method:'POST',signal:AbortSignal.timeout(3000),headers:{'Content-Type':'application/json'},body:JSON.stringify({command:b.dataset.command})}),d=await r.json();if(!r.ok)throw Error(d.error||'Không gửi được lệnh');pending={id:d.request_id,boot:d.boot_id||currentBoot,at:Date.now()};el('result').textContent='Đã gửi MQTT, đang chờ ESP32 xác nhận…';}catch(e){el('result').textContent=e.message;}refresh();});refresh();setInterval(refresh,1000);
+</script></body></html>

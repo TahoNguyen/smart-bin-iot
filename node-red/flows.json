@@ -1,0 +1,472 @@
+[
+  {
+    "id": "bin-flow",
+    "type": "tab",
+    "label": "Nhóm 6 · Smart Bin",
+    "disabled": false,
+    "info": "Open http://127.0.0.1:1880/bin . Core nodes only. Change broker in MQTT config node. Change BIN_TOPIC_PREFIX in this tab environment to match firmware.",
+    "env": [
+      {
+        "name": "BIN_TOPIC_PREFIX",
+        "value": "iot/nhom6/bin-a7f39c",
+        "type": "str"
+      },
+      {
+        "name": "BIN_TELEMETRY_TOPIC",
+        "value": "${BIN_TOPIC_PREFIX}/telemetry",
+        "type": "env"
+      },
+      {
+        "name": "BIN_AVAILABILITY_TOPIC",
+        "value": "${BIN_TOPIC_PREFIX}/availability",
+        "type": "env"
+      }
+    ]
+  },
+  {
+    "id": "bin-broker",
+    "type": "mqtt-broker",
+    "name": "Smart Bin MQTT",
+    "broker": "broker.hivemq.com",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "30",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "willMsg": {}
+  },
+  {
+    "id": "telemetry",
+    "type": "mqtt in",
+    "z": "bin-flow",
+    "name": "Dữ liệu ESP32",
+    "x": 140,
+    "y": 110,
+    "topic": "${BIN_TELEMETRY_TOPIC}",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "bin-broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "wires": [
+      [
+        "ingest"
+      ]
+    ]
+  },
+  {
+    "id": "availability",
+    "type": "mqtt in",
+    "z": "bin-flow",
+    "name": "LWT online/offline",
+    "x": 150,
+    "y": 370,
+    "topic": "${BIN_AVAILABILITY_TOPIC}",
+    "qos": "1",
+    "datatype": "utf8",
+    "broker": "bin-broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "wires": [
+      [
+        "save-availability"
+      ]
+    ]
+  },
+  {
+    "id": "save-availability",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "Lưu kết nối",
+    "x": 440,
+    "y": 370,
+    "func": "flow.set('availability',String(msg.payload)); return null;",
+    "outputs": 0,
+    "wires": []
+  },
+  {
+    "id": "ingest",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "Kiểm tra + lưu + cảnh báo",
+    "x": 450,
+    "y": 110,
+    "outputs": 2,
+    "func": "const p=msg.payload;\nconst states=['warming','settling','sensor_fault','normal','checking','obstruction_suspected','high_unverified','full','inspection_required','service','empty_check','bag_check_failed'];\nconst modes=['operating','servicing','verifying_empty','service_failed'];\nconst uint=v=>Number.isInteger(v)&&v>=0&&v<=4294967295;\nconst percent=v=>Number.isFinite(v)&&v>=0&&v<=100;\nif(!p||p.schema!==4||typeof p.boot_id!=='string'||!/^[0-9a-f]{16}$/.test(p.boot_id)||!uint(p.uptime_ms)||\n !['esp32','desktop_simulator'].includes(p.source)||p.mouth_sensor_available!==false||p.mouth_blocked!==null||p.lid_position_confirmed!==false||\n !['paused_open','settling','warming','ready','fault'].includes(p.measurement_status)||\n !states.includes(p.level_state)||!modes.includes(p.service_mode)||![1,2].includes(p.sensor_count)||\n !['sensor_ok','sensor_a_ok','sensor_b_ok','hand_held','empty_verified','full','hand_detected','muted','remote_control'].every(k=>typeof p[k]==='boolean')||\n !['open','closed'].includes(p.lid)||!uint(p.open_count)||typeof p.last_command_id!=='string'||\n !['none','applied','accepted','rejected','expired'].includes(p.last_command_result))return null;\nif(p.sensor_ok&&(!percent(p.fill_percent)||!Number.isFinite(p.distance_cm)||!uint(p.sample_age_ms)||p.sample_age_ms>6500))return null;\nif(p.sensor_ok&&(!p.sensor_a_ok||!percent(p.fill_a_percent)))return null;\nif(p.sensor_ok&&p.sensor_count===2&&(!p.sensor_b_ok||!percent(p.fill_b_percent)))return null;\nif(p.full!==(p.level_state==='full'))return null;\nif(['paused_open','settling'].includes(p.measurement_status)&&(p.sensor_ok||p.sensor_a_ok||p.sensor_b_ok))return null;\nif(p.sensor_ok&&p.measurement_status!=='ready')return null;\nif(p.lid==='open'&&p.measurement_status!=='paused_open')return null;\nif(p.full&&(!p.sensor_ok||p.sensor_count!==2||!p.empty_verified||p.lid!=='closed'||p.service_mode!=='operating'||p.fill_a_percent<85||p.fill_b_percent<85))return null;\nconst old=flow.get('latest');\nif(old&&old.telemetry.boot_id===p.boot_id){\n const advance=(p.uptime_ms-old.telemetry.uptime_ms)>>>0;\n if(advance===0||advance>=2147483648)return null; // Duplicates do not refresh online state.\n}\nconst now=Date.now();\nflow.set('latest',{telemetry:p,received_at:now});flow.set('availability','online');\nconst newBoot=!old||old.telemetry.boot_id!==p.boot_id;\nconst times=newBoot?{}:(flow.get('alertTimes')||{});\nif(newBoot)flow.set('alertTimes',times);\nconst lastMilestone=flow.get('fillMilestone')||0;\nif(p.service_mode==='operating'&&p.sensor_count===2&&p.sensor_ok&&p.empty_verified&&\n ['normal','checking','full'].includes(p.level_state)){\n const level=Math.min(p.fill_a_percent,p.fill_b_percent);\n if(lastMilestone&&Math.max(p.fill_a_percent,p.fill_b_percent)<=15){\n  flow.set('fillMilestone',0);\n }\n // At 100%, wait for the firmware's full confirmation before notifying.\n const milestone=level>=100?(p.full?100:0):level>=90?90:level>=80?80:0;\n if(milestone>lastMilestone){\n  const text={\n   80:'Thùng rác đã đạt 80%. Thùng sắp đầy.',\n   90:'Thùng rác đã đạt 90%. Vui lòng thu gom sớm.',\n   100:'Thùng rác đã đầy 100%. Vui lòng thu gom ngay.'\n  };\n  flow.set('fillMilestone',milestone);\n  return [msg,{payload:{boot_id:p.boot_id,level_state:p.level_state,fill_milestone:milestone,text:text[milestone]}}];\n }\n}\nconst messages={\n obstruction_suspected:'Hai cảm biến đo chênh lệch. Vui lòng kiểm tra rác dồn lệch hoặc vật che.',\n inspection_required:'Mức rác tăng đột ngột. Vui lòng kiểm tra giấy hoặc túi có che cảm biến không.',\n high_unverified:'Mức rác đang cao. Vui lòng kiểm tra bên trong thùng.',\n bag_check_failed:'Kiểm tra túi mới chưa đạt. Hãy chỉnh lại mép túi rồi kiểm tra lại.',\n sensor_fault:'Không đo được mức rác. Vui lòng kiểm tra hai cảm biến.',\n hand_held:'Cảm biến tay bị che quá 30 giây. Vui lòng kiểm tra phía trước thùng.'\n};\nconst key=messages[p.level_state]?p.level_state:(p.hand_held&&p.service_mode==='operating'?'hand_held':'');\nif(!key)return [msg,null];\nif(times[key]!==undefined&&now-times[key]<60000)return [msg,null];\ntimes[key]=now;flow.set('alertTimes',times);\nreturn [msg,{payload:{level_state:key,text:messages[key]}}];\n",
+    "wires": [
+      [
+        "telemetry-debug",
+        "watch-ack"
+      ],
+      [
+        "alert-debug",
+        "telegram"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-debug",
+    "type": "debug",
+    "z": "bin-flow",
+    "name": "1 · ESP32 → Node-RED: dữ liệu",
+    "x": 800,
+    "y": 70,
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": []
+  },
+  {
+    "id": "watch-ack",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "Đọc xác nhận từ ESP32",
+    "x": 800,
+    "y": 140,
+    "outputs": 1,
+    "func": "const p=msg.payload,id=p.last_command_id,key=p.boot_id+':'+id;if(!id||key===context.get('lastKey'))return null;context.set('lastKey',key);return {payload:{request_id:id,result:p.last_command_result,lid:p.lid,muted:p.muted,level_state:p.level_state,service_mode:p.service_mode}};",
+    "wires": [
+      [
+        "ack-debug"
+      ]
+    ]
+  },
+  {
+    "id": "ack-debug",
+    "type": "debug",
+    "z": "bin-flow",
+    "name": "3 · ESP32 trả kết quả lệnh",
+    "x": 1120,
+    "y": 140,
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": []
+  },
+  {
+    "id": "alert-debug",
+    "type": "debug",
+    "z": "bin-flow",
+    "name": "Cảnh báo (luôn xem được)",
+    "x": 810,
+    "y": 210,
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": []
+  },
+  {
+    "id": "telegram",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "Telegram: chỉ bật bằng biến môi trường",
+    "x": 820,
+    "y": 280,
+    "outputs": 1,
+    "func": "if(env.get('TELEGRAM_ENABLED')!=='true') return null;\nconst token=env.get('TELEGRAM_BOT_TOKEN'), chat=env.get('TELEGRAM_CHAT_ID');\nif(!token||!chat){node.warn('Thiếu TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID');return null;}\nmsg.method='POST';\nmsg.url='https://api.telegram.org/bot'+token+'/sendMessage';\nmsg.headers={'content-type':'application/json'};\nmsg.payload={chat_id:chat,text:msg.payload.text};\nreturn msg;",
+    "wires": [
+      [
+        "telegram-http"
+      ]
+    ]
+  },
+  {
+    "id": "telegram-http",
+    "type": "http request",
+    "z": "bin-flow",
+    "name": "Gửi Telegram",
+    "x": 1120,
+    "y": 280,
+    "method": "use",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "senderr": false,
+    "headers": [],
+    "wires": [
+      [
+        "telegram-result"
+      ]
+    ]
+  },
+  {
+    "id": "telegram-result",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "Kiểm tra phản hồi Telegram",
+    "x": 1380,
+    "y": 280,
+    "outputs": 1,
+    "func": "if(msg.statusCode!==200||!msg.payload||msg.payload.ok!==true){node.warn('Telegram gửi thất bại; kiểm tra token/chat/network (không ghi token vào log).');} return {payload:{statusCode:msg.statusCode,ok:!!(msg.payload&&msg.payload.ok)}};",
+    "wires": [
+      [
+        "telegram-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telegram-debug",
+    "type": "debug",
+    "z": "bin-flow",
+    "name": "Kết quả Telegram",
+    "x": 1630,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": []
+  },
+  {
+    "id": "dashboard-in",
+    "type": "http in",
+    "z": "bin-flow",
+    "name": "GET /bin",
+    "x": 150,
+    "y": 500,
+    "url": "/bin",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "wires": [
+      [
+        "dashboard"
+      ]
+    ]
+  },
+  {
+    "id": "dashboard",
+    "type": "template",
+    "z": "bin-flow",
+    "name": "Bảng giám sát tiếng Việt",
+    "x": 450,
+    "y": 500,
+    "field": "payload",
+    "fieldType": "msg",
+    "format": "html",
+    "syntax": "plain",
+    "template": "<!doctype html>\n<html lang=\"vi\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Nhóm 6 · Thùng rác thông minh</title>\n<style>\n:root{font-family:system-ui,sans-serif;color:#e7edf8;background:#0c1625;color-scheme:dark}*{box-sizing:border-box}body{margin:0}main{max-width:1000px;margin:0 auto;padding:42px 22px}header{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:32px}.eyebrow{color:#6ae4bc;font-size:12px;letter-spacing:.18em}h1{font-size:clamp(25px,5vw,38px);margin:9px 0}p{color:#a9b8cc;line-height:1.6}.badge{border:1px solid #394c63;border-radius:30px;padding:10px 16px;white-space:nowrap}.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}.card{background:#142338;border:1px solid #283c54;border-radius:20px;padding:26px}.value{font-size:68px;font-weight:700;margin:14px 0}progress{width:100%;height:20px;accent-color:#57dbb0}.details{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:25px}.label{font-size:13px;color:#9db0c9}.metric{font-size:21px;margin-top:6px}.buttons{display:flex;flex-wrap:wrap;gap:10px}button{padding:13px 16px;border:1px solid #4a617b;border-radius:11px;background:#263e58;color:#fff;font:inherit;cursor:pointer}button:first-child{background:#62dfb3;color:#09251d;border:0}button:disabled{opacity:.4;cursor:default}#alert{margin-top:20px;padding:16px;border-radius:12px;background:#1e354c}.foot{font-size:12px;margin-top:24px}#result{min-height:50px;overflow-wrap:anywhere}@media(max-width:650px){header{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.value{font-size:58px}}\n</style></head>\n<body><main><header><div><div class=\"eyebrow\">NHÓM 6 / IOT SMART BIN</div><h1>Thùng rác thông minh</h1><p>v4 · Hai HC-SR04 dưới nắp · Không dùng Break Beam</p></div><div id=\"online\" class=\"badge\">Đang kết nối…</div></header>\n<section class=\"grid\"><article class=\"card\"><div class=\"label\">MỨC ƯỚC TÍNH TỪ HAI VÙNG ĐO</div><div class=\"value\" id=\"fill\">—</div><progress id=\"bar\" max=\"100\" value=\"0\"></progress><div id=\"alert\" role=\"status\">Chờ dữ liệu ESP32…</div><div class=\"details\"><div><div class=\"label\">Khoảng cách A / B</div><div class=\"metric\" id=\"distance\">—</div></div><div><div class=\"label\">Cảm biến mức rác</div><div class=\"metric\" id=\"sensor\">—</div></div></div></article>\n<article class=\"card\"><div class=\"label\">TRẠNG THÁI THIẾT BỊ</div><div class=\"details\"><div><div class=\"label\">Lệnh nắp (chưa có phản hồi vị trí)</div><div class=\"metric\" id=\"lid\">—</div></div><div><div class=\"label\">Phát hiện tay</div><div class=\"metric\" id=\"hand\">—</div></div><div><div class=\"label\">Số lượt mở</div><div class=\"metric\" id=\"count\">—</div></div><div><div class=\"label\">Còi báo</div><div class=\"metric\" id=\"muted\">—</div></div></div><p id=\"updated\">Chưa nhận dữ liệu</p><div class=\"buttons\"><button disabled data-command=\"open\">Mở 5 giây</button><button disabled data-command=\"auto\">Tự động</button><button disabled data-command=\"mute\">Tắt còi</button><button disabled data-command=\"unmute\">Bật còi</button></div><p id=\"result\" aria-live=\"polite\">Nắp ưu tiên tín hiệu tay bên ngoài. Không có cảm biến xác nhận vật chắn trong miệng thùng.</p></article></section><article class=\"card\" style=\"margin-top:18px\"><div class=\"label\">KIỂM TRA MỨC RÁC VÀ THAY TÚI</div><div class=\"details\"><div><div class=\"label\">Cảm biến miệng thùng</div><div class=\"metric\" id=\"mouth\">—</div></div><div><div class=\"label\">Chế độ</div><div class=\"metric\" id=\"service\">—</div></div><div><div class=\"label\">Mốc thùng gần rỗng</div><div class=\"metric\" id=\"verified\">—</div></div></div><p>1. Bắt đầu thay túi để giữ mở nắp. 2. Đưa mép túi vào vành giữ, để hở cảm biến. 3. Bấm kiểm tra; rút tay và để miệng thùng thông thoáng. Chỉ báo đạt khi các phép đo xác nhận gần rỗng.</p><div class=\"buttons\"><button disabled data-command=\"begin_service\">Bắt đầu thay túi</button><button disabled data-command=\"finish_service\">Đã lắp túi — kiểm tra</button><button disabled data-command=\"recheck\">Đo lại</button></div></article>\n<p class=\"foot\">Khoảng cách không nhận dạng được vật liệu. Mức cao đột ngột yêu cầu kiểm tra; hệ thống không tự ép/gạt rác. Hai cảm biến vẫn có thể cùng bị che bởi vật lớn. Chỉ cảm biến tay bên ngoài yêu cầu giữ mở. Giấy mắc ngoài hai vùng đo có thể bị bỏ sót. Chưa có phản hồi vị trí nắp hay chống kẹp được kiểm chứng.</p></main>\n<script>\nconst el=id=>document.getElementById(id);let pending=null, busy=false;\nfunction levelMessage(d){\n const messages={warming:'Đang thu đủ mẫu để lọc nhiễu',settling:'Nắp mở / chờ ổn định — chưa kết luận mức rác',sensor_fault:'Phép đo lỗi hoặc ngoài chiều cao thùng — kiểm tra cảm biến',normal:'Các điểm đo chưa cao; không có nghĩa mọi vùng đều trống',checking:'Đang xác nhận qua nhiều cặp đo mới',obstruction_suspected:'Nghi vật che hoặc rác lệch — chưa xác nhận đầy',high_unverified:'Mức cao chưa xác minh: kiểm tra giấy/túi hoặc thực hiện thay túi',full:'Có khả năng đầy: mức tăng và hai vùng cao ổn định',inspection_required:'Mức tăng cao đột ngột / chưa loại trừ vật che. Kiểm tra giấy/túi; không coi là đầy.',service:'Đang thay túi — nắp được giữ mở để thao tác',empty_check:'Đang kiểm tra sau thay túi. Rút tay, để miệng thông thoáng và chờ kết quả.',bag_check_failed:'Kiểm tra túi KHÔNG ĐẠT. Chỉnh túi khỏi vùng cảm biến, bắt đầu thay túi rồi kiểm tra lại.'};\n if(d.hand_held&&d.service_mode==='operating'&&d.level_state==='settling')return 'Cảm biến tay bị tác động quá 30 giây. Kiểm tra tay/vật che/dây; không ép đóng.';\n return messages[d.level_state]||'Dữ liệu chưa tương thích; cần firmware schema 4';\n}\nlet currentBoot='';\nasync function refresh(){\n if(busy)return;busy=true;\n try{\n  const r=await fetch('/bin/api',{cache:'no-store',signal:AbortSignal.timeout(3000)});if(!r.ok)throw Error();\n  const s=await r.json(),d=s.telemetry||{},ok=s.online;\n  el('online').textContent=ok?(d.source==='desktop_simulator'?'● MÔ PHỎNG TRÊN MÁY':'● ESP32 trực tuyến'):'○ Thiết bị ngoại tuyến';\n  el('online').style.color=ok?'#6ae4bc':'#ffbc80';\n  document.querySelectorAll('button').forEach(b=>b.disabled=!ok||!d.remote_control||!!pending||(b.dataset.command==='finish_service'&&!['servicing','service_failed'].includes(d.service_mode))||(b.dataset.command==='recheck'&&d.service_mode!=='operating'));currentBoot=d.boot_id||'';\n  const valid=ok&&d.sensor_ok, estimate=valid&&['normal','full'].includes(d.level_state);\n  el('fill').textContent=estimate?Number(d.fill_percent).toFixed(1)+'%':'—';\n  el('bar').value=estimate?d.fill_percent:0;\n  const cm=(v,good)=>good&&Number.isFinite(v)?v.toFixed(1)+' cm':'—';\n  el('distance').textContent=ok?'A: '+cm(d.distance_a_cm,d.sensor_a_ok)+(d.sensor_count===2?' / B: '+cm(d.distance_b_cm,d.sensor_b_ok):' (chỉ 1 điểm)'):'—';\n  const sampling={paused_open:'Tạm ngừng đo: nắp mở',settling:'Chờ nắp ổn định',warming:'Đang lấy mẫu mới',fault:'Lỗi phép đo',ready:'Hai điểm hợp lệ'};el('sensor').textContent=ok?(sampling[d.measurement_status]||'Không xác định'):'Không có dữ liệu';\n  el('lid').textContent=ok?(d.lid==='open'?'Đang mở':'Đang đóng'):'—';\n  el('hand').textContent=ok?(d.hand_detected?'Có tay':'Không'):'—';\n  el('count').textContent=ok?d.open_count:'—';\n  el('muted').textContent=ok?(d.muted?'Đã tắt':'Đã bật'):'—';\n  el('updated').textContent=s.received_at?'Nhận lúc '+new Date(s.received_at).toLocaleTimeString('vi-VN'):'Chờ ESP32 phát dữ liệu';\n  el('alert').textContent=ok?levelMessage(d):'Mất kết nối hoặc chưa nhận dữ liệu mới';\n  el('alert').style.background=ok&&['full','obstruction_suspected','high_unverified','inspection_required','mouth_blocked','bag_check_failed','sensor_fault'].includes(d.level_state)?'#6a3821':'#1e354c';\n  el('mouth').textContent='Không trang bị — không xác nhận thông thoáng';\n  const modes={operating:'Hoạt động',servicing:'Đang thay túi',verifying_empty:'Kiểm tra thùng gần rỗng',service_failed:'Cần chỉnh túi / cảm biến'};\n  el('service').textContent=ok?(modes[d.service_mode]||'Không xác định'):'—';\n  el('verified').textContent=ok?(d.empty_verified?'Đã có bằng chứng gần rỗng':'Chưa xác minh / cần kiểm tra'):'—';\n  if(ok&&!d.remote_control&&!pending)el('result').textContent='Thiết bị đang tắt điều khiển từ xa. Dùng nút S tại thùng để thay túi / kiểm tra.';\n  if(pending){\n   if(pending.boot&&pending.boot!==d.boot_id){el('result').textContent='ESP32 đã khởi động lại. Lệnh trước đó không còn được coi là đã xác nhận.';pending=null;}\n   else if(d.last_command_id===pending.id){const results={applied:'ESP32 đã áp dụng lệnh. Vị trí thực của nắp chưa có cảm biến xác nhận.',accepted:'Đã nhận yêu cầu. Theo dõi chế độ thay túi/kiểm tra để biết hoàn tất hay thất bại.',rejected:'ESP32 từ chối lệnh vì không đúng trạng thái.',expired:'Lệnh hết hạn trước khi áp dụng.'};el('result').textContent=results[d.last_command_result]||'Kết quả chưa xác định';pending=null;}\n   else if(Date.now()-pending.at>8000){el('result').textContent='Chưa có xác nhận sau 8 giây. Kiểm tra MQTT trước khi thử lại.';pending=null;}\n  }\n }catch{el('online').textContent='Không kết nối được Node-RED';document.querySelectorAll('button').forEach(b=>b.disabled=true);}\n finally{busy=false;}\n}\ndocument.querySelectorAll('button').forEach(b=>b.onclick=async()=>{document.querySelectorAll('button').forEach(x=>x.disabled=true);try{const r=await fetch('/bin/api/command',{method:'POST',signal:AbortSignal.timeout(3000),headers:{'Content-Type':'application/json'},body:JSON.stringify({command:b.dataset.command})}),d=await r.json();if(!r.ok)throw Error(d.error||'Không gửi được lệnh');pending={id:d.request_id,boot:d.boot_id||currentBoot,at:Date.now()};el('result').textContent='Đã gửi MQTT, đang chờ ESP32 xác nhận…';}catch(e){el('result').textContent=e.message;}refresh();});refresh();setInterval(refresh,1000);\n</script></body></html>\n",
+    "output": "str",
+    "wires": [
+      [
+        "html-headers"
+      ]
+    ]
+  },
+  {
+    "id": "html-headers",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "HTML UTF-8",
+    "x": 760,
+    "y": 500,
+    "outputs": 1,
+    "func": "msg.headers={'content-type':'text/html; charset=utf-8','cache-control':'no-store'};return msg;",
+    "wires": [
+      [
+        "http-response"
+      ]
+    ]
+  },
+  {
+    "id": "api-in",
+    "type": "http in",
+    "z": "bin-flow",
+    "name": "GET /bin/api",
+    "x": 150,
+    "y": 580,
+    "url": "/bin/api",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "wires": [
+      [
+        "api"
+      ]
+    ]
+  },
+  {
+    "id": "api",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "Dữ liệu + kiểm tra quá hạn",
+    "x": 470,
+    "y": 580,
+    "outputs": 1,
+    "func": "const s=flow.get('latest')||{},age=s.received_at?Date.now()-s.received_at:-1;msg.headers={'content-type':'application/json','cache-control':'no-store'};msg.payload={...s,online:age>=0&&age<6000&&flow.get('availability')!=='offline'};return msg;",
+    "wires": [
+      [
+        "http-response"
+      ]
+    ]
+  },
+  {
+    "id": "command-in",
+    "type": "http in",
+    "z": "bin-flow",
+    "name": "POST /bin/api/command",
+    "x": 180,
+    "y": 750,
+    "url": "/bin/api/command",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "wires": [
+      [
+        "command"
+      ]
+    ]
+  },
+  {
+    "id": "command",
+    "type": "function",
+    "z": "bin-flow",
+    "name": "Kiểm tra lệnh + hạn dùng",
+    "x": 500,
+    "y": 750,
+    "outputs": 2,
+    "func": "msg.headers={'content-type':'application/json'};\nconst command=msg.payload&&msg.payload.command;\nif(!['open','auto','mute','unmute','begin_service','finish_service','recheck'].includes(command)){\n msg.statusCode=400;msg.payload={error:'Lệnh không hợp lệ'};return [null,msg];\n}\nconst s=flow.get('latest'),now=Date.now();\nif(!s||now-s.received_at<0||now-s.received_at>=6000||flow.get('availability')==='offline'){\n msg.statusCode=409;msg.payload={error:'ESP32 ngoại tuyến hoặc dữ liệu quá hạn'};return [null,msg];\n}\nif(!s.telemetry.remote_control){msg.statusCode=403;msg.payload={error:'Thiết bị đang tắt điều khiển từ xa; dùng cảm biến/nút tại thùng'};return [null,msg];}\nif(now-(flow.get('lastCommandAt')||0)<500){msg.statusCode=429;msg.payload={error:'Vui lòng chờ trước khi gửi lệnh tiếp theo'};return [null,msg];}\nif(command==='finish_service'&&!['servicing','service_failed'].includes(s.telemetry.service_mode)){\n msg.statusCode=409;msg.payload={error:'Hãy bắt đầu thay túi trước khi yêu cầu kiểm tra'};return [null,msg];\n}\nif(command==='recheck'&&s.telemetry.service_mode!=='operating'){\n msg.statusCode=409;msg.payload={error:'Đang trong quy trình thay túi; hãy hoàn tất hoặc bắt đầu lại'};return [null,msg];\n}\nflow.set('lastCommandAt',now);\nconst request_id=now.toString(36)+'-'+Math.random().toString(36).slice(2,10);\n// Convert only the short server receipt age into the device uptime epoch.\nconst expires_at_uptime_ms=(s.telemetry.uptime_ms+(now-s.received_at)+5000)>>>0;\nconst outgoing={topic:env.get('BIN_TOPIC_PREFIX')+'/command',payload:JSON.stringify({command,request_id,\n boot_id:s.telemetry.boot_id,expires_at_uptime_ms}),qos:'0',retain:false};\nmsg.statusCode=202;msg.payload={status:'queued',request_id,boot_id:s.telemetry.boot_id};return [outgoing,msg];\n",
+    "wires": [
+      [
+        "mqtt-command",
+        "command-debug"
+      ],
+      [
+        "http-response"
+      ]
+    ]
+  },
+  {
+    "id": "command-debug",
+    "type": "debug",
+    "z": "bin-flow",
+    "name": "2 · Node-RED → ESP32: lệnh",
+    "x": 880,
+    "y": 820,
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": []
+  },
+  {
+    "id": "mqtt-command",
+    "type": "mqtt out",
+    "z": "bin-flow",
+    "name": "Lệnh ESP32 · KHÔNG retain",
+    "x": 860,
+    "y": 750,
+    "topic": "",
+    "qos": "0",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "bin-broker",
+    "wires": []
+  },
+  {
+    "id": "http-response",
+    "type": "http response",
+    "z": "bin-flow",
+    "name": "HTTP response",
+    "x": 1110,
+    "y": 580,
+    "statusCode": "",
+    "headers": {},
+    "wires": []
+  },
+  {
+    "id": "catch",
+    "type": "catch",
+    "z": "bin-flow",
+    "name": "Bắt lỗi flow",
+    "x": 160,
+    "y": 910,
+    "scope": null,
+    "uncaught": false,
+    "wires": [
+      [
+        "error-debug"
+      ]
+    ]
+  },
+  {
+    "id": "error-debug",
+    "type": "debug",
+    "z": "bin-flow",
+    "name": "Lỗi flow",
+    "x": 450,
+    "y": 910,
+    "active": true,
+    "tosidebar": true,
+    "complete": "error.message",
+    "targetType": "msg",
+    "wires": []
+  },
+  {
+    "id": "note-uplink",
+    "type": "comment",
+    "z": "bin-flow",
+    "name": "① DỮ LIỆU: ESP32 → MQTT → kiểm tra / cảnh báo",
+    "x": 390,
+    "y": 40,
+    "info": "Mở Debug sidebar. Node 1 hiển thị telemetry schema 4. Phân loại mức rác thực hiện trong firmware; Node-RED kiểm tra/lưu/cảnh báo. Node 3 đọc last_command_id mà ESP32 báo lại.",
+    "wires": []
+  },
+  {
+    "id": "note-dashboard",
+    "type": "comment",
+    "z": "bin-flow",
+    "name": "② GIAO DIỆN: trình duyệt đọc dữ liệu đã lưu",
+    "x": 390,
+    "y": 450,
+    "info": "GET /bin phục vụ giao diện. GET /bin/api trả trạng thái mới nhất và kiểm tra quá hạn 6 giây. Đây không phải một broker MQTT khác.",
+    "wires": []
+  },
+  {
+    "id": "note-command",
+    "type": "comment",
+    "z": "bin-flow",
+    "name": "③ ĐIỀU KHIỂN: nút bấm → MQTT → ESP32",
+    "x": 430,
+    "y": 690,
+    "info": "POST /bin/api/command kiểm tra lệnh và sinh request_id. Node 2 cho thấy lệnh gửi đi. last_command_id trong telemetry là xác nhận ESP32 đã áp dụng, không xác nhận vị trí servo thực.",
+    "wires": []
+  }
+]

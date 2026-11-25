@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "author": "Nhom 6 - Smart Bin",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 50,
+      "left": 50,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "level",
+      "top": -135,
+      "left": 225,
+      "attrs": {
+        "distance": "40"
+      }
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "levelB",
+      "top": -135,
+      "left": 415,
+      "attrs": {
+        "distance": "40"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "ir",
+      "top": 55,
+      "left": -175,
+      "attrs": {
+        "color": "green",
+        "label": "IR: GIU H = CO TAY",
+        "key": "H",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "lid",
+      "top": 50,
+      "left": 360,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzz",
+      "top": 205,
+      "left": 345,
+      "attrs": {
+        "volume": "0.15"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "full",
+      "top": 265,
+      "left": -115,
+      "attrs": {
+        "color": "red",
+        "label": "DAY > 90%"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rled",
+      "top": 325,
+      "left": -100,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "note",
+      "top": -245,
+      "left": -170,
+      "attrs": {
+        "text": "NHOM 6 | SMART BIN v4 - NO BREAK BEAM\nH: tay. S: thay tui / kiem tra.\n2 HC-SR04 gan duoi nap: CHI do sau lenh dong + on dinh 2s.\nA=B=40cm: xac minh rong. A/B nhay cao: can kiem tra.\nKhong phat hien duoc moi vat mac / ket nap.\nEcho truc tiep CHI mo phong. Mach that: phan ap + nguon servo rieng."
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "service",
+      "top": 245,
+      "left": -175,
+      "attrs": {
+        "color": "blue",
+        "label": "S: THAY TUI / KIEM TRA",
+        "key": "S",
+        "bounce": "0"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX0",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX0",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "esp:VIN",
+      "level:VCC",
+      "red",
+      []
+    ],
+    [
+      "esp:GND.1",
+      "level:GND",
+      "black",
+      []
+    ],
+    [
+      "esp:D25",
+      "level:TRIG",
+      "green",
+      []
+    ],
+    [
+      "esp:D26",
+      "level:ECHO",
+      "blue",
+      []
+    ],
+    [
+      "esp:VIN",
+      "levelB:VCC",
+      "red",
+      []
+    ],
+    [
+      "esp:GND.1",
+      "levelB:GND",
+      "black",
+      []
+    ],
+    [
+      "esp:D32",
+      "levelB:TRIG",
+      "green",
+      []
+    ],
+    [
+      "esp:D33",
+      "levelB:ECHO",
+      "blue",
+      []
+    ],
+    [
+      "esp:D13",
+      "ir:1.l",
+      "green",
+      []
+    ],
+    [
+      "esp:GND.2",
+      "ir:2.l",
+      "black",
+      []
+    ],
+    [
+      "esp:D18",
+      "lid:PWM",
+      "orange",
+      []
+    ],
+    [
+      "esp:VIN",
+      "lid:V+",
+      "red",
+      []
+    ],
+    [
+      "esp:GND.1",
+      "lid:GND",
+      "black",
+      []
+    ],
+    [
+      "esp:D19",
+      "buzz:2",
+      "purple",
+      []
+    ],
+    [
+      "esp:GND.1",
+      "buzz:1",
+      "black",
+      []
+    ],
+    [
+      "esp:D23",
+      "rled:1",
+      "red",
+      []
+    ],
+    [
+      "rled:2",
+      "full:A",
+      "red",
+      []
+    ],
+    [
+      "full:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:D14",
+      "service:1.l",
+      "blue",
+      []
+    ],
+    [
+      "esp:GND.2",
+      "service:2.l",
+      "black",
+      []
+    ]
+  ],
+  "serialMonitor": {
+    "display": "always",
+    "newline": "lf"
+  }
+}

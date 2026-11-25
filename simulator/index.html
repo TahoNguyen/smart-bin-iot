@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Smart Bin v4 · Mô phỏng cơ cấu</title>
+<style>
+:root{font-family:Segoe UI,system-ui,sans-serif;color:#163441;background:#f0f5f5;--mint:#137b67;--line:#d9e5e5}*{box-sizing:border-box}body{margin:0}main{max-width:1420px;margin:auto;padding:28px 32px}header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:23px}.eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--mint)}h1{font-size:30px;margin:7px 0}header p{margin:0;color:#607a84;font-size:14px}.tag{font-size:12px;padding:9px 13px;border-radius:30px;background:#d8eee7;color:#16654f;font-weight:600}.layout{display:grid;grid-template-columns:minmax(480px,1.35fr) minmax(350px,1fr);gap:20px}.card{background:white;border:1px solid var(--line);border-radius:20px;padding:23px}.card h2{font-size:17px;margin:0 0 8px}.muted{font-size:13px;line-height:1.6;color:#68808b}.stage{background:radial-gradient(ellipse at 50% 55%,#e6f3ef,white 70%);border-radius:14px;position:relative}.stage svg{display:block;width:100%;height:auto;max-height:470px}.stage text{font-family:Segoe UI,system-ui,sans-serif}.statusbar{display:flex;gap:8px;flex-wrap:wrap}.pill{background:#edf3f5;padding:7px 11px;border-radius:8px;font-size:12px}.pill.green{background:#dff3e9;color:#146149}.pill.orange{background:#fff0db;color:#8d510d}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.metric{background:#f4f7f7;padding:13px;border-radius:12px}.label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#6b838b}.big{font-size:25px;font-weight:650;margin-top:5px}.message{padding:15px;border-left:3px solid var(--mint);background:#f0f8f5;font-size:14px;line-height:1.6;margin-top:15px;border-radius:0 8px 8px 0;min-height:74px}.message.warn{border-color:#c88325;background:#fff7eb}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}button,select,input{font:inherit}button{border:1px solid #cfdfdf;background:white;color:#294750;border-radius:10px;padding:10px 13px;cursor:pointer;font-size:13px;transition:background .15s}button:hover{background:#edf6f3}button.primary{background:var(--mint);color:white;border-color:var(--mint);font-weight:600}button.hand-on{background:#ae4e36;border-color:#ae4e36}button:disabled{opacity:.45;cursor:default}.divider{border-top:1px solid var(--line);margin:20px 0}.range-row{display:grid;grid-template-columns:1fr 72px;align-items:center;gap:12px;margin:8px 0}.range-row input[type=range]{width:100%;accent-color:#167b77}input[type=number]{width:72px;border:1px solid #cfdfdf;padding:7px;border-radius:7px;color:#294750;background:#fff}.sensor{padding:12px 0}.sensor b{font-size:13px}.sensor small{float:right;color:#67818a}.scenario-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.scenario-grid button{text-align:left;line-height:1.45}.scenario-grid span{display:block;color:#789099;font-size:11px;margin-top:3px}.links{display:flex;gap:14px;flex-wrap:wrap;margin-top:13px}a{color:#107a68;text-underline-offset:3px;font-size:13px}.bottom{display:grid;grid-template-columns:1.35fr 1fr;gap:20px;margin-top:20px}.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;margin:18px 0}.flow b{background:#edf6f3;padding:10px;border-radius:8px}.flow span{color:#7d9599}#events{padding:0;margin:12px 0 0;list-style:none;max-height:150px;overflow:auto}#events li{padding:8px 0;border-bottom:1px solid #edf1f2;font-size:12px;line-height:1.5}#events time{color:#7a929b;margin-right:9px}#error{color:#a64129;font-size:13px;min-height:18px}footer{font-size:12px;color:#738a94;line-height:1.7;margin-top:20px}select{border:1px solid #d9e5e5;background:white;border-radius:8px;padding:7px;font-size:12px}code{font-size:11px;overflow-wrap:anywhere}.header-right{text-align:right}.offline{background:#ffeadf;color:#914b2b}@media(max-width:950px){.layout,.bottom{grid-template-columns:1fr}main{padding:20px}header{align-items:flex-start}.stage svg{max-height:430px}}@media(max-width:550px){header{flex-direction:column}.header-right{text-align:left}.metrics{gap:5px}.big{font-size:21px}.card{padding:16px}.scenario-grid{grid-template-columns:1fr}}
+.demo-status{margin:12px 0 0;min-height:2.6em;color:#566f79;font-size:13px;line-height:1.55}
+.milestones{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.milestones .pill{min-width:52px;text-align:center}
+.milestones .pill.green{font-weight:650}
+.alert-preview{background:#f4f7f7;border-radius:12px;padding:14px;margin:16px 0}
+.alert-preview h3{font-size:13px;margin:0 0 6px}
+.alert-preview ul{font-size:13px;line-height:1.55;margin:0;padding-left:17px}
+.alert-preview li+li{margin-top:4px}
+.manual{border-top:1px solid var(--line);margin-top:18px;padding-top:15px}
+.manual summary{cursor:pointer;font-size:14px;font-weight:650}
+.manual summary:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+[hidden]{display:none!important}
+</style></head><body><main>
+<header><div><div class="eyebrow">NHÓM 6 / SMART BIN V4</div><h1>Mô phỏng thùng rác thông minh</h1><p>Mở nắp tự động, đo mức rác và xem cảnh báo trên cùng một màn hình.</p></div><div class="header-right"><span id="connection" class="tag">Đang kết nối…</span><div class="links"><a id="redlink" href="http://127.0.0.1:1882/" target="_blank" rel="noopener">Luồng Node-RED ↗</a><a id="dashlink" href="http://127.0.0.1:1882/bin" target="_blank" rel="noopener">Dashboard ↗</a></div></div></header>
+<div class="layout"><section class="card"><h2>Mặt cắt thùng và nắp chuyển động</h2><div class="muted">Hình cắt bỏ thành trước để thấy cảm biến. Góc nắp là hoạt ảnh theo lệnh, không phải phản hồi từ servo thật.</div>
+<div class="stage"><svg viewBox="-20 -170 740 710" role="img" aria-label="Mô phỏng nắp mở quanh bản lề và hai vùng đo hướng xuống khi đóng nắp">
+<defs><linearGradient id="body" x2="1" y2="1"><stop stop-color="#cedddb"/><stop offset="1" stop-color="#90aaa9"/></linearGradient><linearGradient id="lidcolor" x2="0" y2="1"><stop stop-color="#44636b"/><stop offset="1" stop-color="#233e48"/></linearGradient><clipPath id="inside"><path d="M192 207H499L484 456H211Z"/></clipPath></defs>
+<ellipse cx="357" cy="487" rx="212" ry="17" fill="#dce9e5"/>
+<path d="M181 194H510L490 468Q351 485 205 468Z" fill="url(#body)" stroke="#71908d" stroke-width="2"/>
+<path d="M192 207H499L484 456H211Z" fill="#eef6f2" stroke="#bed2cb"/>
+<g clip-path="url(#inside)"><path d="M200 215L214 452H481L494 215" fill="none" stroke="#b8cebf" stroke-width="12" opacity=".5"/>
+<path id="trashA" d="M200 440Q250 426 300 440T355 440V465H200Z" fill="#b3c59b"/><path id="trashB" d="M350 440Q400 426 450 440T500 440V465H350Z" fill="#9db998"/>
+<g id="cones"><path id="coneA" d="M276 202L244 440H308Z" fill="#69aee4" opacity=".24"/><path id="coneB" d="M410 202L378 440H442Z" fill="#52bf9a" opacity=".26"/><path id="rayA" d="M276 208V438" stroke="#428cc2" stroke-width="2" stroke-dasharray="6 6"/><path id="rayB" d="M410 208V438" stroke="#28a879" stroke-width="2" stroke-dasharray="6 6"/></g>
+<path id="paper" d="M236 258L275 251L315 261L354 253L396 261L455 255L464 268L413 274L362 267L312 276L270 266L239 272Z" fill="#fff" stroke="#adb9b5" stroke-width="2" visibility="hidden"/>
+<path id="hiddenPaper" d="M456 260L484 252L493 261L489 292L459 287Z" fill="white" stroke="#bba083" stroke-width="2" visibility="hidden"/>
+</g>
+<path d="M179 193H511V210H179Z" fill="#c2d4cf" stroke="#829d96"/>
+<path d="M194 210H498" stroke="#718d81" stroke-width="4"/>
+<circle cx="184" cy="180" r="9" fill="#2a4047"/>
+<g id="lid"><path d="M184 179V158Q342 136 511 158V179Z" fill="url(#lidcolor)" stroke="#233f48" stroke-width="2"/>
+<g id="sensorA"><rect x="252" y="180" width="48" height="10" rx="2" fill="#2276ae"/><rect x="255" y="190" width="17" height="13" rx="3" fill="#9ab1bc"/><rect x="279" y="190" width="17" height="13" rx="3" fill="#9ab1bc"/><text x="276" y="174" fill="white" font-size="12" font-weight="700" text-anchor="middle">A</text></g>
+<g id="sensorB"><rect x="386" y="180" width="48" height="10" rx="2" fill="#2276ae"/><rect x="389" y="190" width="17" height="13" rx="3" fill="#9ab1bc"/><rect x="413" y="190" width="17" height="13" rx="3" fill="#9ab1bc"/><text x="410" y="174" fill="white" font-size="12" font-weight="700" text-anchor="middle">B</text></g></g>
+<rect x="510" y="215" width="29" height="40" rx="5" fill="#2b4650"/><circle id="irLight" cx="525" cy="226" r="4" fill="#79978f"/>
+<rect x="137" y="177" width="38" height="49" rx="8" fill="#2a7d6b"/><circle cx="156" cy="190" r="7" fill="#deeee6"/><path d="M156 190L180 181" stroke="#fff" stroke-width="4"/>
+<path d="M84 170H137" stroke="#718c87"/><text x="20" y="166" font-size="12" fill="#526e76">Servo + tay đòn</text>
+<path d="M105 227H179" stroke="#819a94"/><text x="20" y="224" font-size="12" fill="#526e76">Bản lề phía sau</text>
+<path d="M539 235H602" stroke="#819a94"/><text x="548" y="257" font-size="12" fill="#526e76">IR nhận tay</text>
+<path d="M499 280H575" stroke="#819a94"/><text x="539" y="299" font-size="12" fill="#526e76">Vành giữ túi</text>
+<text x="349" y="511" text-anchor="middle" font-size="13" fill="#607e7b">Hai vùng quan sát — không quét toàn bộ miệng thùng</text>
+<g id="handIcon" visibility="hidden"><rect x="570" y="188" width="55" height="31" rx="12" fill="#e8b293"/><path d="M577 197L547 197" stroke="#e8b293" stroke-width="9" stroke-linecap="round"/><path d="M576 208L552 208" stroke="#e8b293" stroke-width="8" stroke-linecap="round"/><text x="572" y="177" fill="#a45c39" font-size="12">Có tay</text></g>
+</svg></div>
+<div class="statusbar"><span id="lidStatus" class="pill">Chờ bộ điều khiển</span><span id="measureStatus" class="pill">Chưa có mẫu</span><span class="pill">Miệng thùng: không có cảm biến</span></div>
+<div class="metrics"><div class="metric"><div class="label">Mức ước tính</div><div class="big" id="fill">—</div></div><div class="metric"><div class="label">Góc minh họa</div><div class="big" id="angle">0°</div></div><div class="metric"><div class="label">Cặp đã đo</div><div class="big" id="pairs">0</div></div></div>
+<div id="message" class="message" role="status">Đang khởi động bộ điều khiển dùng chung với firmware ESP32…</div>
+</section>
+<section class="card"><h2>Trình diễn</h2>
+<div id="desktopControls" class="controls"><button id="demoButton" class="primary">Chạy demo báo đầy</button><button id="handButton">Đưa tay vào</button><button id="demoSound" aria-pressed="false">Bật âm còi</button></div>
+<p id="demoStatus" class="demo-status" aria-live="polite">Demo tự tăng mức rác từ gần rỗng đến 100%. Bạn cũng có thể thử đưa tay vào và rút tay ra.</p>
+<div class="milestones"><span id="mark80" class="pill">80%</span><span id="mark90" class="pill">90%</span><span id="mark100" class="pill">100%</span><span id="alarmCount" class="pill">Còi báo đầy · 0 tiếng</span></div>
+<div class="alert-preview"><h3 id="telegramTitle">Xem trước tin Telegram</h3><p id="alertEmpty" class="muted">Chưa có cảnh báo mức rác.</p><ul id="notifications" aria-live="polite"></ul></div>
+<details id="manualControls" class="manual"><summary>Điều khiển thủ công</summary>
+<div class="controls"><button data-command="open">Mở 5 giây</button><button data-command="auto">Tự động</button></div>
+<div class="sensor"><b>Khoảng cách đầu vào A</b><small id="readA">Chưa đo</small><div class="range-row"><input id="sliderA" aria-label="Khoảng cách A" type="range" min="2" max="45" step="0.5" value="40"><input id="inputA" aria-label="Khoảng cách A cm" type="number" min="2" max="400" step="0.5" value="40"></div></div>
+<div class="sensor"><b>Khoảng cách đầu vào B</b><small id="readB">Chưa đo</small><div class="range-row"><input id="sliderB" aria-label="Khoảng cách B" type="range" min="2" max="45" step="0.5" value="40"><input id="inputB" aria-label="Khoảng cách B cm" type="number" min="2" max="400" step="0.5" value="40"></div></div>
+<div class="muted">Đầu vào là khoảng cách phản xạ giả lập, không phải phép tính âm học từ hình vẽ. Mốc demo: rỗng 40cm; mức cao 4cm.</div>
+<div class="divider"></div><div class="scenario-grid">
+<button data-a="40" data-b="40" data-scene="normal">Gần rỗng<span>A / B = 40cm</span></button>
+<button data-a="22" data-b="22" data-scene="normal">Rác lên khoảng 50%<span>Giữ từng mức cho đến khi số đo ổn định</span></button>
+<button data-a="11" data-b="11" data-scene="normal">Rác lên khoảng 80%<span>Bước tiếp theo của quá trình tăng dần</span></button>
+<button data-a="7" data-b="7" data-scene="normal">Rác vượt mốc 90%<span>Chỉ “có khả năng đầy” khi đủ bằng chứng</span></button>
+<button data-a="3" data-b="3" data-scene="normal">Rác đạt mốc 100%<span>Thử sau khi đã qua mốc 90%</span></button>
+<button data-a="7" data-b="40" data-scene="paper_a">Giấy che vùng A<span>Nghi bị che hoặc rác không đều</span></button>
+<button data-a="7" data-b="7" data-scene="paper_both">Giấy phủ cả hai vùng<span>Đột ngột: yêu cầu kiểm tra</span></button>
+<button data-a="4" data-b="4" data-scene="bag">Túi che hai cảm biến<span>Thử trong quy trình thay túi phía dưới</span></button>
+<button data-a="40" data-b="40" data-scene="hidden_paper">Giấy ngoài vùng đo<span>Có thể bị bỏ sót — không tự giữ mở</span></button>
+</div>
+<div class="controls"><button id="faultA">Mất Echo A</button><button data-command="begin_service">Bắt đầu thay túi</button><button data-command="finish_service">Đã lắp túi — kiểm tra</button><button data-command="recheck">Xóa mốc, đo lại</button></div>
+<div class="divider"></div><div class="controls"><label class="muted">Thời gian mô phỏng <select id="speed" aria-label="Tốc độ mô phỏng"><option value="1">1× thời gian thật</option><option value="5">5× nhanh</option><option value="10">10× nhanh</option></select></label><button data-command="mute">Tắt còi thiết bị</button><button data-command="unmute">Bật còi thiết bị</button><button data-command="reset">Đưa về gần rỗng</button></div>
+</details>
+<div class="controls"><button id="stopSimulator">Dừng mô phỏng</button></div><div id="error" role="alert"></div>
+</section></div>
+<div class="bottom"><section class="card"><h2>Luồng đang chạy trên máy</h2><div class="flow"><b>Tay + khoảng cách A/B</b><span>→</span><b>Bộ điều khiển C++</b><span>→</span><b>Lệnh servo</b><span>→</span><b>MQTT → Node-RED</b></div><div class="muted" id="transport">Đang kết nối broker mô phỏng…</div><p class="muted">Cùng mã điều khiển với ESP32. Giao diện chỉ vẽ chuyển động theo lệnh; chưa kiểm chứng lực nâng, kẹt nắp, va chạm hoặc sóng siêu âm.</p></section><section class="card"><h2>Nhật ký chuyển trạng thái</h2><ul id="events" aria-live="polite"></ul></section></div>
+<footer>Đây là mô phỏng trên máy tính, không phải dữ liệu ESP32 thật. Nắp minh họa cần đủ khoảng trống cho gá cảm biến và dây. Bỏ Break Beam đồng nghĩa không xác nhận miệng thùng thông thoáng; hai HC-SR04 không nhận dạng được giấy, túi hoặc mọi vật cản. Trước khi nạp thật, đo kích thước, hiệu chuẩn khoảng cách/góc và kiểm tra cơ khí.</footer>
+</main><script>
+const $=id=>document.getElementById(id);let latest=null,angle=0,target=0,lastFrame=performance.now(),busy=false,hand=false;
+const messages={normal:'Các vùng đo chưa cao. Điều này không chứng minh toàn bộ miệng thùng thông thoáng.',warming:'Đang lấy đủ mẫu mới để lọc. Sau mỗi lần mở nắp, mẫu ở góc cũ được xóa.',settling:'Nắp đang mở hoặc chờ ổn định. Không kích HC-SR04 và không kết luận mức rác.',checking:'Đang xác nhận qua các cặp đo mới.',inspection_required:'Mức cao tăng đột ngột hoặc còn nghi che khuất. Yêu cầu người dùng kiểm tra, chưa coi là đầy.',obstruction_suspected:'Hai vùng khác nhau rõ rệt: nghi bị che hoặc rác lệch.',high_unverified:'Mức cao nhưng chưa có mốc gần rỗng đáng tin. Không xác nhận đầy.',full:'Có khả năng đầy theo hai vùng đo và lịch sử tăng dần. Không nhận dạng chắc chắn vật liệu.',sensor_fault:'Phép đo lỗi hoặc ngoài chiều cao đã hiệu chuẩn. Không chuyển lỗi thành “thùng rỗng”.',service:'Đang thay túi: giữ nắp mở và ngừng đo. Kẹp mép túi ra ngoài, tránh vùng cảm biến.',empty_check:'Đang kiểm tra sau thay túi. Rút tay, chờ nắp đóng ổn định và lấy mẫu mới.',bag_check_failed:'Kiểm tra sau thay túi KHÔNG ĐẠT. Chỉnh túi, bắt đầu thay túi rồi kiểm tra lại.'};
+const measureNames={paused_open:'Ngừng đo · nắp mở',settling:'Chờ ổn định 2 giây',warming:'Thu mẫu mới',ready:'Hai vùng có dữ liệu',fault:'Lỗi phép đo'};
+async function send(data){try{const r=await fetch('/api/control',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});const p=await r.json();if(!r.ok)throw Error(p.error);$('error').textContent='';}catch(e){$('error').textContent=e.message;}}
+let sound=null,soundEnabled=false,buzzerBoot='',lastPulse=0,notificationKey='';
+$('demoButton').onclick=()=>send({demo:latest?.demo?.status==='running'?'stop':'start'});
+$('demoSound').onclick=async()=>{
+ try{
+   if(!soundEnabled){
+     sound??=new AudioContext();
+     await sound.resume();
+   }
+   soundEnabled=!soundEnabled;
+   $('demoSound').setAttribute('aria-pressed',String(soundEnabled));
+   $('demoSound').textContent=soundEnabled?'Tắt âm còi':'Bật âm còi';
+ }catch{$('error').textContent='Trình duyệt chưa bật được âm thanh. Bạn vẫn có thể xem số tiếng còi.';}
+};
+function playPulse(){
+ const oscillator=sound.createOscillator(),gain=sound.createGain(),at=sound.currentTime;
+ oscillator.frequency.value=2000;
+ gain.gain.setValueAtTime(.08,at);
+ gain.gain.exponentialRampToValueAtTime(.001,at+.2);
+ oscillator.connect(gain).connect(sound.destination);
+ oscillator.start(at);oscillator.stop(at+.2);
+ oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+}
+function drawDemo(s){
+ const fromWokwi=s.mode==='wokwi';
+ const running=s.demo?.status==='running';
+ $('desktopControls').hidden=fromWokwi;
+ $('manualControls').hidden=fromWokwi;
+ $('alarmCount').hidden=fromWokwi;
+ $('telegramTitle').textContent=s.telegram_enabled?'Telegram đang bật':'Xem trước tin Telegram';
+ $('demoButton').textContent=running?'Dừng kịch bản':'Chạy demo báo đầy';
+ const status=fromWokwi?'Chỉnh hai cảm biến trong Wokwi. Trang này cập nhật theo dữ liệu mạch.':
+   running?s.demo.label:s.demo?.status==='complete'?'Đã chạy hết kịch bản 80%, 90% và 100%.':
+   s.demo?.status==='stopped'?'Đã dừng kịch bản. Có thể tiếp tục bằng điều khiển thủ công.':
+   'Demo tự tăng mức rác từ gần rỗng đến 100%. Bạn cũng có thể thử đưa tay vào và rút tay ra.';
+ if($('demoStatus').textContent!==status)$('demoStatus').textContent=status;
+ $('handButton').disabled=running;
+ document.querySelectorAll('.manual button,.manual input,.manual select').forEach(element=>element.disabled=running);
+ const count=s.telemetry?.full_buzzer_pulses??0;
+ $('alarmCount').textContent='Còi báo đầy · '+count+' tiếng';
+ if(soundEnabled&&s.telemetry?.boot_id===buzzerBoot&&count>lastPulse)playPulse();
+ buzzerBoot=s.telemetry?.boot_id;lastPulse=count;
+ const key=JSON.stringify(s.notifications);
+ if(key===notificationKey)return;
+ notificationKey=key;
+ for(const level of [80,90,100]){
+   $('mark'+level).classList.toggle('green',s.notifications.some(item=>item.level===level));
+ }
+ $('alertEmpty').hidden=s.notifications.length>0;
+ $('notifications').replaceChildren(...s.notifications.map(item=>{
+   const line=document.createElement('li');line.textContent=item.text;return line;
+ }));
+}
+function setHand(value){if(latest?.mode==='wokwi')return;hand=value;send({hand:value});}
+$('handButton').onclick=()=>setHand(!hand);
+document.addEventListener('keydown',e=>{if(e.code==='KeyH'&&latest?.demo?.status!=='running'&&!e.repeat&&!['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)){e.preventDefault();setHand(true);}});
+document.addEventListener('keyup',e=>{if(e.code==='KeyH'&&hand)setHand(false);});window.addEventListener('blur',()=>{if(hand)setHand(false);});
+document.querySelectorAll('[data-command]').forEach(b=>b.onclick=()=>send({command:b.dataset.command}));
+document.querySelectorAll('[data-scene]').forEach(b=>b.onclick=()=>send({a:Number(b.dataset.a),b:Number(b.dataset.b),scene:b.dataset.scene}));
+for(const name of ['A','B'])for(const type of ['slider','input'])$(type+name).addEventListener('input',e=>{const v=Number(e.target.value);if(Number.isFinite(v)&&v>=2&&v<=400){$(type==='slider'?'input'+name:'slider'+name).value=v;send({[name.toLowerCase()]:v,scene:'normal'});}});
+$('faultA').onclick=()=>send({a:null});$('speed').onchange=e=>send({speed:Number(e.target.value)});
+document.getElementById('stopSimulator').onclick=()=>fetch('/api/shutdown',{method:'POST'});let eventKey='';function logEvent(d){const key=[d.boot_id,d.level_state,d.service_mode,d.measurement_status,d.lid].join('|');if(key===eventKey)return;eventKey=key;const li=document.createElement('li'),time=document.createElement('time');time.textContent=(d.uptime_ms/1000).toFixed(1)+'s';li.append(time,document.createTextNode((messages[d.level_state]||d.level_state)+' · Lệnh nắp: '+d.lid));$('events').prepend(li);while($('events').children.length>30)$('events').lastChild.remove();}
+function drawInputs(input,d){
+ hand=input.hand;$('handButton').textContent=hand?'Rút tay ra':'Đưa tay vào';$('handButton').classList.toggle('hand-on',hand);
+ $('handIcon').setAttribute('visibility',hand?'visible':'hidden');$('irLight').setAttribute('fill',hand?'#f8b05d':'#79978f');
+ for(const k of ['A','B']){const v=input[k.toLowerCase()];for(const type of ['slider','input'])if(document.activeElement!==$(type+k)&&v!==null)$(type+k).value=v;const good=d['sensor_'+k.toLowerCase()+'_ok'],cm=d['distance_'+k.toLowerCase()+'_cm'];$('read'+k).textContent=good&&Number.isFinite(cm)?'Đo được '+cm.toFixed(1)+' cm':'Chưa có mẫu hợp lệ';}
+ if(document.activeElement!==$('speed'))$('speed').value=input.speed;
+ const y=k=>205+Math.max(0,Math.min(40,input[k]??40))/40*245;
+ const ya=y('a'),yb=y('b');
+ const paper=['paper_a','paper_both','bag'].includes(input.scene);
+ $('paper').setAttribute('visibility',paper?'visible':'hidden');$('hiddenPaper').setAttribute('visibility',input.scene==='hidden_paper'?'visible':'hidden');
+ if(paper){$('paper').setAttribute('d',input.scene==='paper_a'?`M240 ${ya}l30 -6l40 7l8 12l-43 -3l-35 5Z`:`M237 ${Math.min(ya,yb)}l38 -6l40 7l39 -7l42 8l60 -6l8 13l-50 6l-52 -7l-50 9l-42 -9l-30 6Z`);}
+ for(const k of ['A','B']){const yy=k==='A'?ya:yb,x=k==='A'?276:410;$('cone'+k).setAttribute('d',`M${x} 202L${x-28} ${yy}H${x+28}Z`);$('ray'+k).setAttribute('d',`M${x} 208V${yy}`);}
+ const trashYA=paper?425:ya,trashYB=paper?425:yb;
+ $('trashA').setAttribute('d',`M200 ${trashYA}Q250 ${trashYA-14} 300 ${trashYA}T355 ${trashYA}V465H200Z`);
+ $('trashB').setAttribute('d',`M350 ${trashYB}Q400 ${trashYB-14} 450 ${trashYB}T500 ${trashYB}V465H350Z`);
+}
+async function refresh(){if(busy)return;busy=true;try{
+ const r=await fetch('/api/state',{cache:'no-store',signal:AbortSignal.timeout(2500)});if(!r.ok)throw Error('Mất kết nối');const s=await r.json();latest=s;
+ $('redlink').href=s.links.editor;$('dashlink').href=s.links.dashboard;
+ if(!s.online){
+   if(s.mode!=='wokwi')throw Error('Bộ điều khiển chưa sẵn sàng');
+   $('connection').textContent='○ ĐANG CHỜ WOKWI';$('connection').classList.add('offline');drawDemo(s);
+   $('message').textContent='Chọn wokwi-local/wokwi.toml trong VS Code, bật Private Gateway và chạy mô phỏng.';
+   $('lidStatus').textContent='Chờ lệnh nắp';$('measureStatus').textContent='Chưa có mẫu';$('measureStatus').classList.remove('green');
+   $('fill').textContent='—';$('pairs').textContent='—';$('stopSimulator').disabled=false;return;
+ }
+ const d=s.telemetry;
+ $('connection').textContent=s.mode==='wokwi'?'● WOKWI ĐANG KẾT NỐI':'● MÔ PHỎNG CỤC BỘ';$('connection').classList.remove('offline');
+ target=d.lid==='open'?-85:0;$('lidStatus').textContent=d.lid==='open'?'Lệnh mở nắp':'Lệnh đóng nắp';
+ $('measureStatus').textContent=measureNames[d.measurement_status]||d.measurement_status;$('measureStatus').classList.toggle('green',d.measurement_status==='ready');
+ $('fill').textContent=d.sensor_ok&&['normal','full'].includes(d.level_state)?d.fill_percent.toFixed(1)+'%':'—';$('pairs').textContent=d.sample_pairs??'—';
+ $('message').textContent=messages[d.level_state]||d.level_state;$('message').classList.toggle('warn',['inspection_required','high_unverified','bag_check_failed','obstruction_suspected','sensor_fault','full'].includes(d.level_state));
+ $('transport').textContent='MQTT '+s.mqtt.host+':'+s.mqtt.port+' · Topic '+s.mqtt.prefix+' · Node-RED '+(s.node_red_ready?'đã chạy':'đang khởi động');
+ drawInputs(s.input,d);logEvent(d);document.querySelectorAll('button,input,select').forEach(el=>el.disabled=false);drawDemo(s);
+ }catch(e){latest=null;$('connection').textContent='○ Mất kết nối mô phỏng';$('connection').classList.add('offline');$('message').textContent='Mở start-simulator.cmd và giữ tiến trình chạy. Dữ liệu trước đó không còn được coi là trực tuyến.';target=angle;document.querySelectorAll('button').forEach(b=>b.disabled=true);$('cones').setAttribute('visibility','hidden');}
+ finally{busy=false;}}
+function animate(t){const dt=Math.min(1,(t-lastFrame)/1000);lastFrame=t;const step=120*dt;if(Math.abs(target-angle)<step)angle=target;else angle+=Math.sign(target-angle)*step;$('lid').setAttribute('transform',`rotate(${angle} 184 180)`);$('angle').textContent=Math.round(-angle)+'°';const ready=latest?.online&&latest.telemetry.measurement_status==='ready'&&Math.abs(angle)<.1;$('cones').setAttribute('visibility',ready?'visible':'hidden');requestAnimationFrame(animate);}refresh();setInterval(refresh,200);requestAnimationFrame(animate);
+</script></body></html>

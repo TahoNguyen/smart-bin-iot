@@ -1,0 +1,16 @@
+name: Hand opens lid then closes after release
+version: 1
+author: Nhom 6
+steps:
+  - wait-serial: 'SMARTBIN v4 ready'
+  - set-control:
+      part-id: ir
+      name: pressed
+      value: 1
+  - wait-serial: 'LID OPEN'
+  - delay: 4s
+  - set-control:
+      part-id: ir
+      name: pressed
+      value: 0
+  - wait-serial: 'LID CLOSED'
