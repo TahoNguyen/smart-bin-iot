@@ -134,7 +134,7 @@ async function main() {
     || new Set(Object.values(ports)).size !== 3) throw Error('Ba cổng SIM_*_PORT phải khác nhau và thuộc 1–65535.');
   if (!Number.isFinite(timeout) || timeout < 1000) throw Error('Thời gian chờ khởi động không hợp lệ.');
   if (sendTelegram && (process.env.TELEGRAM_ENABLED !== 'true' || !process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID)) {
-    throw Error('Chạy CHAY-DO-AN-TELEGRAM.cmd để nhập thông tin bot.');
+    throw Error('Thiết lập TELEGRAM_ENABLED=true, TELEGRAM_BOT_TOKEN và TELEGRAM_CHAT_ID theo README.md rồi chạy lại.');
   }
   console.log('THÙNG RÁC THÔNG MINH IoT\n');
   try {

@@ -3,7 +3,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $compilerPath = Join-Path $projectRoot 'tmp\native-toolchain\ziglang\zig.exe'
 if (!(Test-Path -LiteralPath $compilerPath)) {
     $compilerCommand = Get-Command zig -ErrorAction SilentlyContinue
-    if (!$compilerCommand) { throw 'Can Zig C/C++ compiler de build lai. Ban ZIP da kem simulator/bin/smartbin-sim.exe.' }
+    if (!$compilerCommand) { throw 'Can Zig C/C++ compiler. Cai Zig 0.13.0 va them thu muc chua zig.exe vao PATH.' }
     $compilerPath = $compilerCommand.Source
 }
 Push-Location $projectRoot

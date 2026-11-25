@@ -11,10 +11,8 @@ const env = { ...process.env, SIM_WEB_PORT: '18766', SIM_NODE_RED_PORT: '18883',
 const children = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 let foreign;
-function launch(overrides = {}, wrapper = false, args = []) {
-  const useCmd = wrapper && process.platform === 'win32';
-  const child = spawn(useCmd ? (process.env.ComSpec || 'cmd.exe') : process.execPath,
-    useCmd ? ['/d', '/c', path.join(root, 'CHAY-DO-AN.cmd'), '--no-browser', ...args] : [path.join(root, 'scripts/start_project.cjs'), '--no-browser', ...args],
+function launch(overrides = {}, args = []) {
+  const child = spawn(process.execPath, [path.join(root, 'scripts/start_project.cjs'), '--no-browser', ...args],
     { cwd: root, windowsHide: true, env: { ...env, ...overrides } });
   child.logs = '';
   child.stdout.on('data', b => child.logs += b);
@@ -45,7 +43,7 @@ async function portFree(port) {
 }
 async function run() {
   for (const port of [18766, 18883, 18887, 18767, 18884, 18888]) assert(await portFree(port), 'Test port busy: ' + port);
-  const first = launch({}, true);
+  const first = launch();
   await until(() => first.logs.includes('Đang bật'), 'first launcher started');
   const concurrent = launch();
   await until(async () => {
@@ -77,7 +75,7 @@ async function run() {
   await fetch(base + '/api/shutdown', { method: 'POST' });
   await waitExit(first);
   await until(async () => (await Promise.all([18766, 18883, 18887].map(portFree))).every(Boolean), 'all project ports released');
-  const telegram = launch({TELEGRAM_ENABLED:'true',TELEGRAM_BOT_TOKEN:'1:fake',TELEGRAM_CHAT_ID:'123'},true,['--wokwi','--send-telegram']);
+  const telegram = launch({TELEGRAM_ENABLED:'true',TELEGRAM_BOT_TOKEN:'1:fake',TELEGRAM_CHAT_ID:'123'},['--wokwi','--send-telegram']);
   await until(async () => {
     const s=await fetch(base+'/api/state').then(r=>r.json());
     return s.mode==='wokwi'&&s.telegram_enabled&&s.node_red_ready&&!s.online;
@@ -86,7 +84,7 @@ async function run() {
   await waitExit(telegram);
   await until(async () => (await Promise.all([18766,18883,18887].map(portFree))).every(Boolean),'Telegram fixture ports released');
 
-  const wokwi=launch({},true,['--wokwi']);
+  const wokwi=launch({},['--wokwi']);
   await until(async () => {
     const s=await fetch(base+'/api/state').then(r=>r.json());
     return s.mode==='wokwi'&&!s.telegram_enabled&&s.node_red_ready&&!s.online;

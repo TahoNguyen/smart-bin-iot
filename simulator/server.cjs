@@ -196,4 +196,4 @@ async function shutdown(code=0){
 }
 process.on('SIGINT',()=>shutdown());process.on('SIGTERM',()=>shutdown());
 module.exports={shutdown};
-main().catch(e=>{console.error(e.message);console.error('Neu thieu thu vien: cd node-red va chay npm.cmd ci');shutdown(1);});
+main().catch(e=>{console.error(e.message);console.error('Neu thieu thu vien: chay npm ci --prefix node-red --include=dev tu thu muc du an');shutdown(1);});
